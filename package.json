@@ -1,0 +1,15 @@
+{
+  "name": "health_report",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.4.9",
+    "@types/tough-cookie": "^4.0.1",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "got": "^11.8.2",
+    "tough-cookie": "^4.0.0"
+  }
+}

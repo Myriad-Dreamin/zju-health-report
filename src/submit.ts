@@ -1,0 +1,79 @@
+import got, * as Got from "got";
+import * as fs from 'fs';
+import * as crypto from 'crypto';
+import { CookieJar } from "tough-cookie";
+import { HealthReportRequest } from "./interface";
+import { browserCookie, userAgent } from "./conf";
+
+export async function healthReportSubmit(info: HealthReportRequest): Promise<void> {
+    console.log('数据提交中, 请稍候...');
+    const cookieJar = new CookieJar();
+    await cookieJar.setCookie(browserCookie, 'https://healthreport.zju.edu.cn');
+    const res = (await got.get('https://healthreport.zju.edu.cn/ncov/wap/default/index', {
+        cookieJar,
+        headers: {
+            'User-Agent': userAgent,
+        }
+    }))
+    const page_body = res.body;
+    let arr: RegExpExecArray;
+    const pageDigest = [];
+    const cExp = /class="([^"]*?)"/g;
+    while ((arr = cExp.exec(page_body)) !== null) {
+        pageDigest.push(arr[1]);
+    }
+    const nExp = /name="([^"]*?)"/g;
+    while ((arr = nExp.exec(page_body)) !== null) {
+        pageDigest.push(arr[1]);
+    }
+    const hasher = crypto.createHash('md5');
+    hasher.update(pageDigest.sort().join('$'));
+    const pageHash = hasher.digest().toString('hex');
+    if (!fs.existsSync('.pageHash')) {
+        fs.writeFileSync('.pageHash', pageHash);
+    }
+    const localHash = fs.readFileSync('.pageHash', { encoding: 'utf-8' });
+    if (localHash != pageHash) {
+        console.log('new body:', page_body);
+        throw new Error(`page changed, please update your code, ${pageHash}...`);
+    }
+    console.log('page revision:', pageHash);
+    const hasFlagFromPage = /hasFlag: ([^\n]*?),/.exec(page_body);
+    if (!hasFlagFromPage) {
+        throw new Error("has flag not found...");
+    }
+    const hf = hasFlagFromPage[1].trim();
+    if (hf == `"1"` || hf == `'1'`) {
+        console.log("您已提交信息 You have submitted");
+        return;
+    }
+    const oldInfoFromPage = /oldInfo: ({[^\n]*?}),\n/.exec(page_body);
+    if (!oldInfoFromPage) {
+        throw new Error("old info not found...");
+    }
+    const freshOldInfo = JSON.parse(oldInfoFromPage[1]);
+    info.date = freshOldInfo.date;
+    info.created = freshOldInfo.created;
+    info.id = freshOldInfo.id;
+    fs.mkdirSync('old_info', { recursive: true });
+    fs.writeFileSync(`old_info/${info.date}.json`, JSON.stringify(info));
+    const resp: Got.Response<any> = await got.post('https://healthreport.zju.edu.cn/ncov/wap/default/save', {
+        cookieJar,
+        form: info,
+        headers: {
+            'x-requested-with': 'XMLHttpRequest',
+            'User-Agent': userAgent,
+        },
+    });
+    console.log(resp);
+    console.log(resp.statusCode);
+    console.log(resp.statusMessage);
+    if (resp.body.e == 0) {
+        console.log("您已提交信息 You have submitted");
+        console.log(resp.body);
+    } else {
+        console.error(resp.body);
+    }
+    return;
+}
+
