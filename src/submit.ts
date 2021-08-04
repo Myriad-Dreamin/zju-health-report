@@ -43,9 +43,14 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
         throw new Error("has flag not found...");
     }
     const hf = hasFlagFromPage[1].trim();
-    if (hf == `"1"` || hf == `'1'`) {
-        console.log("您已提交信息 You have submitted");
-        return;
+    const reqAuthFromPage = /}, def, ({[^}]*?})/.exec(page_body);
+    if (!reqAuthFromPage) {
+        throw new Error("reqAuth not found...");
+    }
+    const kvRegex = /"([^"]*?)":\s*"([^"]*?)"/g;
+    const p = reqAuthFromPage[1];
+    while((arr = kvRegex.exec(p)) != null) {
+        info[arr[1]] = arr[2];
     }
     const oldInfoFromPage = /oldInfo: ({[^\n]*?}),\n/.exec(page_body);
     if (!oldInfoFromPage) {
@@ -55,6 +60,10 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     info.date = freshOldInfo.date;
     info.created = freshOldInfo.created;
     info.id = freshOldInfo.id;
+    if (hf == `"1"` || hf == `'1'`) {
+        console.log("您已提交信息 You have submitted");
+        return;
+    }
     fs.mkdirSync('old_info', { recursive: true });
     fs.writeFileSync(`old_info/${info.date}.json`, JSON.stringify(info));
     const resp: Got.Response<any> = await got.post('https://healthreport.zju.edu.cn/ncov/wap/default/save', {

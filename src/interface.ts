@@ -1,5 +1,5 @@
 
-export interface HealthReportRequest {
+export type HealthReportRequest = {
     sfymqjczrj: number | string;
     zjdfgj: string | number
     sfyrjjh: string | number;
@@ -73,4 +73,4 @@ export interface HealthReportRequest {
     gtjzzfjsj: string
     szgjcs: string
     ismoved: number
-}
+} & Record<string, string>;

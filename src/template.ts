@@ -2,7 +2,7 @@ import { HealthReportRequest } from "./interface";
 
 export const infoTemplate = {
     // error on difference between ajax and got
-    // "jrdqtlqk": [],
+    // "jrdqtlqk": [],  
     "sfymqjczrj": 0,
     "zjdfgj": "",
     "sfyrjjh": "0",
@@ -65,4 +65,4 @@ export const infoTemplate = {
     "gtjzzfjsj": "",
     "szgjcs": "",
     "ismoved": 0
-} as HealthReportRequest;
+} as unknown as HealthReportRequest;
