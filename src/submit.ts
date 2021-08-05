@@ -11,6 +11,7 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     await cookieJar.setCookie(browserCookie, 'https://healthreport.zju.edu.cn');
     const res = (await got.get('https://healthreport.zju.edu.cn/ncov/wap/default/index', {
         cookieJar,
+        agent: false,
         headers: {
             'User-Agent': userAgent,
         }
@@ -68,6 +69,7 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     fs.writeFileSync(`old_info/${info.date}.json`, JSON.stringify(info));
     const resp: Got.Response<any> = await got.post('https://healthreport.zju.edu.cn/ncov/wap/default/save', {
         cookieJar,
+        agent: false,
         form: info,
         headers: {
             'x-requested-with': 'XMLHttpRequest',
