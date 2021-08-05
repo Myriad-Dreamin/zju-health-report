@@ -1,9 +1,9 @@
 import got, * as Got from "got";
-import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { CookieJar } from "tough-cookie";
 import { HealthReportRequest } from "./interface";
 import { browserCookie, userAgent } from "./conf";
+import { updateAndVerifyPageHash, writeOldInfo } from "./data";
 
 export async function healthReportSubmit(info: HealthReportRequest): Promise<void> {
     console.log('数据提交中, 请稍候...');
@@ -30,11 +30,7 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     const hasher = crypto.createHash('md5');
     hasher.update(pageDigest.sort().join('$'));
     const pageHash = hasher.digest().toString('hex');
-    if (!fs.existsSync('.pageHash')) {
-        fs.writeFileSync('.pageHash', pageHash);
-    }
-    const localHash = fs.readFileSync('.pageHash', { encoding: 'utf-8' });
-    if (localHash != pageHash) {
+    if (!updateAndVerifyPageHash(pageHash)) {
         console.log('new body:', page_body);
         throw new Error(`page changed, please update your code, ${pageHash}...`);
     }
@@ -62,11 +58,10 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     info.created = freshOldInfo.created;
     info.id = freshOldInfo.id;
     if (hf == `"1"` || hf == `'1'`) {
-        console.log("您已提交信息 You have submitted");
+        console.log("您今日已提交信息，无需再提交 You have submitted today, and the submission is canceled");
         return;
     }
-    fs.mkdirSync('old_info', { recursive: true });
-    fs.writeFileSync(`old_info/${info.date}.json`, JSON.stringify(info));
+    writeOldInfo(info.date, info);
     const resp: Got.Response<any> = await got.post('https://healthreport.zju.edu.cn/ncov/wap/default/save', {
         cookieJar,
         agent: false,
