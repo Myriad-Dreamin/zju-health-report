@@ -74,9 +74,15 @@ export async function healthReportSubmit(info: HealthReportRequest): Promise<voi
     console.log(resp);
     console.log(resp.statusCode);
     console.log(resp.statusMessage);
-    if (resp.body.e == 0) {
-        console.log("您已提交信息 You have submitted");
+    let body: Record<string, any>;
+    try {
+        body = JSON.parse(resp.body);
+    } catch (e) {
+        console.log('is not json:', resp.body);
+    }
+    if (body.e == 0) {
         console.log(resp.body);
+        console.log("您已提交信息 You have submitted");
     } else {
         console.error(resp.body);
     }
